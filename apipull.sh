@@ -4,26 +4,26 @@
 api_dir="$HOME/code/productive/api"
 
 if [[ ! -d $api_dir ]]; then
-  echo "Directory $api_dir does not exist!"
+  echo "🤖 Directory $api_dir does not exist!"
   return 1
 fi
 
-echo "Changing directory to $api_dir"
+echo "🤖 Changing directory to $api_dir"
 cd "$api_dir" || return 1
 
 # Step 1: git pull
-echo 'Pulling latest changes from remote repository...'
+echo '🤖 Pulling latest changes from remote repository...'
 pull_output=$(git pull)
 
 # Check if Gemfile or Gemfile.lock was mentioned in the output
 if echo "$pull_output" | grep -q -E "(Gemfile|Gemfile.lock)"; then
   # Step 2: bundle install
-  echo 'Installing gem dependencies...'
+  echo '🤖 Installing gem dependencies...'
   bundle install
 fi
 
 # Step 3: bundle exec rails db:migrate
-echo 'Running database migrations...'
+echo '🤖 Running database migrations...'
 migrate_command="bundle exec rails db:migrate"
 eval "${migrate_command}"
 
@@ -50,23 +50,29 @@ for migration_file in "$migration_dir"/**/*.rake; do
 
     if [[ ! " ${migration_state[*]} " =~ " ${migration_identifier} " ]]; then
       echo
-      echo "New migration detected: $migration_identifier"
-      read -p "Run it, never run it or just skip it for now? [y/n/*] " -n 1 -r
+      echo "🤖 New migration detected: $migration_identifier"
+      read -p "🤖 Run it, never run it or just skip it for now? [y/n/*] " -n 1 -r
       echo
       if [[ $REPLY = "y" ]]; then
         migration_command="bundle exec rails migrations:$migration_task"
-        echo "Running migration..."
+        echo "🤖 Running migration..."
         if eval "${migration_command}"; then
           echo "$migration_identifier" >> "$migration_state_file"
-          echo "Migration successful: $migration_task"
+          echo "🤖 Migration successful: $migration_task"
         else
-          echo "Migration failed: $migration_task"
+          echo "🤖 Migration failed: $migration_task"
+          read -p "🤖 Ignore it? [y/n] " -n 1 -r
+          echo
+          if [[ $REPLY = "y" ]]; then
+            echo "🤖 Ignoring migration..."
+            echo "$migration_identifier" >> "$migration_state_file"
+          fi
         fi
       elif [[ $REPLY = "n" ]]; then
-        echo "Ignoring migration..."
+        echo "🤖 Ignoring migration..."
         echo "$migration_identifier" >> "$migration_state_file"
       else
-        echo "Skipping migration for now..."
+        echo "🤖 Skipping migration for now..."
       fi
     fi
   done
@@ -74,12 +80,12 @@ for migration_file in "$migration_dir"/**/*.rake; do
 done
 
 # Step 5: git restore .
-echo 'Cleaning up...'
+echo '🤖 Cleaning up...'
 git restore .
-echo 'Done!'
+echo '🤖 Done!'
 
 # Step 6: bundle exec sidekiq
-read -p "Run Sidekiq? [y/n] " -n 1 -r
+read -p "🤖 Run Sidekiq? [y/n] " -n 1 -r
 echo
 if [[ $REPLY = "y" ]]; then
   sidekiq_command="bundle exec sidekiq"
